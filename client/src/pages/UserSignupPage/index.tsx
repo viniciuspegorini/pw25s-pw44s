@@ -3,9 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { IUserSignUp } from "@/commons/interfaces";
 import { ButtonWithProgress } from "../../components/ButtonWithProgress";
 import { Input } from "../../components/Input";
-import AuthService from '@/service/AuthService'
+import AuthService from "@/service/AuthService";
 
-import './style.scss'
+import "./style.scss";
 
 export function UserSignupPage() {
   const [form, setForm] = useState<IUserSignUp>({
@@ -26,9 +26,13 @@ export function UserSignupPage() {
 
   useEffect(() => {
     if (form.password || form.passwordRepeat) {
-      setPasswordRepeatError((form.password === form.passwordRepeat) ? "" : "As senhas devem ser iguais");
+      setPasswordRepeatError(
+        form.password === form.passwordRepeat
+          ? ""
+          : "As senhas devem ser iguais"
+      );
     }
-  }, [form])
+  }, [form]);
 
   const onChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { value, name } = event.target;
@@ -36,15 +40,15 @@ export function UserSignupPage() {
       return {
         ...previousForm,
         [name]: value,
-      }
-    })
+      };
+    });
     setErrors((previousErrors) => {
       return {
         ...previousErrors,
         [name]: undefined,
-      }
-    })
-  }
+      };
+    });
+  };
 
   const onClickSignup = async () => {
     const user: IUserSignUp = {
@@ -52,45 +56,20 @@ export function UserSignupPage() {
       username: form.username,
       password: form.password,
       passwordRepeat: form.passwordRepeat,
-    }
-    setPendingApiCall(true)
-    const [response, error] = await AuthService.signup(user)
-    if (error) {
-      setApiError(error.response.data.message)
-      if (error.response.data && error.response.data.validationErrors) {
-        setErrors(error.response.data.validationErrors)
-      }
-    } else if (response) {
-      console.log(response)
-      if (response.status === 200) {
-        console.log(response.status)
-        navigate('/')
-      } else {
-        setApiError('Ocorreu um erro ao salvar o usuário.')
-      }
-    }
-    setPendingApiCall(false)
-  }
-
-  const onClickSignupV1 = () => {
-    const user: IUserSignUp = {
-      displayName: form.displayName,
-      username: form.username,
-      password: form.password,
-      passwordRepeat: form.passwordRepeat,
     };
     setPendingApiCall(true);
-    AuthService.signup(user)
-      .then((response) => {
-        setPendingApiCall(false);
-        navigate("/");
-      })
-      .catch((apiError) => {
-        if (apiError.response.data && apiError.response.data.validationErrors) {
-          setErrors(apiError.response.data.validationErrors);
-        }
-        setPendingApiCall(false);
-      });
+
+    const response = await AuthService.signup(user);
+
+    if (response.status === 200 || response.status === 201) {
+      navigate("/");
+    } else if (response) {
+      if (response.data && response.data.validationErrors) {
+        setErrors(response.data.validationErrors);
+      }
+      setApiError("Ocorreu um erro ao salvar o usuário.");
+    }
+    setPendingApiCall(false);
   };
 
   return (

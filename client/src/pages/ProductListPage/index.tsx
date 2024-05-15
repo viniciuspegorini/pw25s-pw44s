@@ -7,38 +7,45 @@ export function ProductListPage() {
   const [data, setData] = useState<IProduct[]>([]);
   const [apiError, setApiError] = useState("");
   const [showDeleteMessage, setShowDeleteMessage] = useState(false);
+  const { findAll, remove } = ProductService;
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = () => {
-    ProductService.findAll()
-      .then((response) => {
-        setData(response.data);
-        setApiError("");
-      })
-      .catch((error) => {
-        setApiError("Falha ao carregar a lista de produtos");
-      });
+  const loadData = async () => {
+    const response = await findAll();
+    if (response.status === 200) {
+      setData(response.data);
+      setApiError("");
+    } else {
+      setApiError("Falha ao carregar a lista de produtos");
+    }
   };
 
-  const onRemove = (id: number) => {
-    ProductService.remove(id)
-      .then((response) => {
-        setShowDeleteMessage(true);
-        loadData();
-        setTimeout(() => { setShowDeleteMessage(false) }, 1500);
-        setApiError("");
-      })
-      .catch((erro) => {
-        setApiError("Falha ao remover o produto");
+  const onRemove = async (id: number) => {
+    const response = await remove(id);
+    if (response.status === 204) {
+      setShowDeleteMessage(true);
+
+      data.filter((product) => {
+        return product.id !== id;
       });
+
+      setTimeout(() => {
+        setShowDeleteMessage(false);
+      }, 1500);
+      setApiError("");
+    } else {
+      setApiError("Falha ao remover o produto");
+    }
   };
 
   return (
-    <div className="container">
-      <h1 className="text-center">Lista de Produtos</h1>
+    <main className="container">
+      <div className="text-center">
+        <span className="h3 mb-3 fw-normal">Lista de Produtos</span>
+      </div>
       <div className="text-center">
         <Link className="btn btn-success" to="/products/new">
           Novo Produto
@@ -81,7 +88,11 @@ export function ProductListPage() {
         </tbody>
       </table>
       {apiError && <div className="alert alert-danger">{apiError}</div>}
-      {showDeleteMessage && <div className="alert alert-success">Registro removido com sucesso!</div>}
-    </div>
+      {showDeleteMessage && (
+        <div className="alert alert-success">
+          Registro removido com sucesso!
+        </div>
+      )}
+    </main>
   );
 }

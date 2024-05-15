@@ -1,20 +1,46 @@
 import { IProduct } from "@/commons/interfaces";
 import { api } from "@/lib/axios";
 
-const save = (product: IProduct) => {
-  return api.post("/products", product);
+const productURL = "/products";
+
+const save = async (product: IProduct): Promise<any> => {
+  let response;
+  try {
+    response = await api.post(productURL, product);
+  } catch (err: any) {
+    response = err.response;
+  }
+  return response;
 };
 
-const findAll = () => {
-  return api.get("/products");
+const findAll = async (): Promise<any> => {
+  let response;
+  try {
+    response = await api.get(productURL);
+  } catch (err: any) {
+    response = err.response;
+  }
+  return response;
 };
 
-const findOne = (id: number) => {
-  return api.get(`/products/${id}`);
+const findOne = async (id: number): Promise<any> => {
+  let response;
+  try {
+    response = await api.get(`${productURL}/${id}`);
+  } catch (err: any) {
+    response = err.response;
+  }
+  return response;
 };
 
-const remove = (id: number) => {
-  return api.delete(`/products/${id}`);
+const remove = async (id: number): Promise<any> => {
+  let response;
+  try {
+    response = await api.delete(`${productURL}/${id}`);
+  } catch (err: any) {
+    response = err.response;
+  }
+  return response;
 };
 
 const ProductService = {

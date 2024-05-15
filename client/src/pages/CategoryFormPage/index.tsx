@@ -1,112 +1,96 @@
-import { ChangeEvent, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ICategory } from "@/commons/interfaces";
-import { ButtonWithProgress } from "@/components/ButtonWithProgress";
-import { Input } from "@/components/Input";
 import CategoryService from "@/service/CategoryService";
+import { useForm } from "react-hook-form";
 
 export function CategoryFormPage() {
-  const [form, setForm] = useState<ICategory>({
-    id: undefined,
-    name: "",
-  });
-  const [errors, setErrors] = useState({
-    id: undefined,
-    name: "",
-  });
-  const [pendingApiCall, setPendingApiCall] = useState(false);
-  const [apiError, setApiError] = useState(false);
+  // hook useForm do react-hook-forms que irá controlar o estado do formulário.
+  const {
+    handleSubmit,
+    register,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<ICategory>();
+  // váriavel de estado para armazenar a mensagem de erro da API.
+  const [apiError, setApiError] = useState("");
+  // hook do react-router-dom para navegação entre as páginas.
   const navigate = useNavigate();
+  // hook do react-router-dom para capturar o id da URL.
   const { id } = useParams();
+  // funções do serviço de categoria.
+  const { save, findById } = CategoryService;
 
+  /* 
+  hook do react para executar ações ao carregar o componente.
+  se o id estiver preenchido, carrega os dados da categoria.
+  */
   useEffect(() => {
     if (id) {
-      CategoryService.findById(parseInt(id))
-        .then((response) => {
-          if (response.data) {
-            setForm({
-              id: response.data.id,
-              name: response.data.name,
-            });
-          }
-        })
-        .catch((responseError) => {
-          setApiError(true);
-        });
+      loadData(parseInt(id));
     }
   }, []);
 
-  const onChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { value, name } = event.target;
-    setForm((previousForm) => {
-      return {
-        ...previousForm,
-        [name]: value,
-      };
-    });
-    setErrors((previousErrors) => {
-      return {
-        ...previousErrors,
-        [name]: "",
-      };
-    });
+  // função para carregar os dados da categoria.
+  const loadData = async (id: number) => {
+    const response = await findById(id);
+    if (response.status === 200) {
+      reset(response.data);
+    } else {
+      setApiError("Falha ao carregar o registro.");
+    }
   };
 
-  const onSubmit = () => {
-    const category: ICategory = {
-      id: form.id,
-      name: form.name,
-      testDate: new Date(),
-    };
-    setPendingApiCall(true);
-    CategoryService.save(category)
-      .then((response) => {
-        setPendingApiCall(false);
-        navigate("/categories");
-      })
-      .catch((responseError) => {
-        if (responseError.response.data.validationErrors) {
-          setErrors(responseError.response.data.validationErrors);
-        }
-        setPendingApiCall(false);
-        setApiError(true);
-      });
+  // função para salvar a categoria.
+  const onSubmit = async (data: ICategory) => {
+    const response = await save(data);
+    if (response.status === 201 || response.status === 200) {
+      navigate("/categories");
+    } else {
+      setApiError("Falha ao carregar o registro.");
+    }
   };
 
   return (
     <>
-      <main className="container">
-        <form>
-          <div className="text-center">
-            <h1 className="h3 mb-3 fw-normal">Cadastro de Categoria</h1>
+      <main className="container row justify-content-center">
+        <form
+          className="form-floating col-md-6"
+          onSubmit={handleSubmit(onSubmit)}
+        >
+          <div className="text-center   mb-3">
+            <span className="h3 fw-normal">Cadastro de Categoria</span>
           </div>
-
           <div className="form-floating mb-3">
-            <Input
-              className="form-control"
-              name="name"
-              label="Nome"
+            <input type="hidden" {...register("id")} />
+            <input
+              className={"form-control" + (errors.name ? " is-invalid" : "")}
               placeholder="Informe o nome"
               type="text"
-              value={form.name}
-              onChange={onChange}
-              hasError={errors.name ? true : false}
-              error={errors.name}
+              {...register("name", {
+                required: "O campo nome é obrigatório.",
+                minLength: {
+                  value: 2,
+                  message: "O tamanho deve ser entre 2 e 100 caracteres.",
+                },
+                maxLength: {
+                  value: 100,
+                  message: "O tamanho deve ser entre 2 e 100 caracteres.",
+                },
+              })}
             />
+            <label htmlFor="name">Nome</label>
+            {errors.name && (
+              <div className="invalid-feedback">{errors.name.message}</div>
+            )}
           </div>
-          {apiError && (
-            <div className="alert alert-danger">
-              Falha ao cadastrar a categoria.
-            </div>
-          )}
-
-          <ButtonWithProgress
+          {apiError && <div className="alert alert-danger">{apiError}</div>}
+          <button
             className="w-100 btn btn-lg btn-primary mb-3"
-            onClick={onSubmit}
-            disabled={pendingApiCall ? true : false}
-            pendingApiCall={pendingApiCall}
-            text="Salvar"
-          />
+            disabled={isSubmitting ? true : false}
+          >
+            Salvar
+          </button>
         </form>
       </main>
     </>

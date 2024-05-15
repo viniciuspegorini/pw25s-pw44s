@@ -29,35 +29,39 @@ export function ProductListPageV2() {
   const [data, setData] = useState<IProduct[]>([]);
   const [apiError, setApiError] = useState("");
   const navigate = useNavigate();
+  const { findAll, remove } = ProductService;
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = () => {
-    ProductService.findAll()
-      .then((response) => {
-        setData(response.data);
-        setApiError("");
-      })
-      .catch((error) => {
-        setApiError("Falha ao carregar a lista de produtos.");
-      });
+  const loadData = async () => {
+    const response = await findAll();
+    if (response.status === 200) {
+      setData(response.data);
+      setApiError("");
+    } else {
+      setApiError("Falha ao carregar a lista de produtos.");
+    }
   };
 
   const onEdit = (url: string) => {
     navigate(url);
   };
 
-  const onRemove = (id: number) => {
-    ProductService.remove(id)
-      .then((response) => {
-        loadData();
-        setApiError("");
-      })
-      .catch((error) => {
-        setApiError("Falha ao remover o produto.");
-      });
+  const onRemove = async (id: number) => {
+    const response = await remove(id);
+    if (response.status === 200 || response.status === 204) {
+      setData(
+        data.filter((product) => {
+          return product.id !== id;
+        })
+      );
+      console.log(data);
+      setApiError("");
+    } else {
+      setApiError("Falha ao remover o produto.");
+    }
   };
 
   return (
@@ -68,9 +72,9 @@ export function ProductListPageV2() {
           className="btn btn-success btn-icon mb-3"
           to="/products-v2/new"
           title="Novo Produto"
-          style={{ display: 'inline-block' }}
+          style={{ display: "inline-block" }}
         >
-          <BsPlusCircle  style={{ display: 'inline-block' }} /> Novo Produto
+          <BsPlusCircle style={{ display: "inline-block" }} /> Novo Produto
         </Link>
       </div>
       <TableContainer>

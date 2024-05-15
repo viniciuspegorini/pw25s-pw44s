@@ -32,6 +32,8 @@ export function ProductFormPageV2() {
     description: "",
     category: { id: undefined, name: "" },
   });
+  const { save, findOne } = ProductService;
+  const { findAll } = CategoryService;
 
   // Executa ao carregar o componente
   useEffect(() => {
@@ -40,36 +42,28 @@ export function ProductFormPageV2() {
 
   const loadData = async () => {
     // Busca a lista de categorias
-    await CategoryService.findAll()
-      .then((response) => {
-        // caso sucesso, adiciona a lista no state
-        setCategories(response.data);
-        setApiError("");
-      })
-      .catch((erro) => {
-        setApiError("Falha ao carregar a combo de categorias.");
-      });
+    const response = await findAll();
+    if (response.status === 200) {
+      setCategories(response.data);
+      setApiError("");
+    } else {
+      setApiError("Falha ao carregar a combo de categorias.");
+    }
     if (id) {
       // ao editar um produto, busca ele no back-end e carrega no objeto form que está no state.
-      ProductService.findOne(parseInt(id))
-        .then((response) => {
-          if (response.data) {
-            console.log(response.data);
-            setEntity({
-              id: response.data.id,
-              name: response.data.name,
-              price: response.data.price,
-              description: response.data.description,
-              category: { id: response.data.category.id, name: "" },
-            });
-            setApiError("");
-          } else {
-            setApiError("Falha ao carregar o produto.");
-          }
-        })
-        .catch((error) => {
-          setApiError("Falha ao carregar o produto.");
+      const response = await findOne(parseInt(id));
+      if (response.status === 200) {
+        setEntity({
+          id: response.data.id,
+          name: response.data.name,
+          price: response.data.price,
+          description: response.data.description,
+          category: { id: response.data.category.id, name: "" },
         });
+        setApiError("");
+      } else {
+        setApiError("Falha ao carregar o produto.");
+      }
     } else {
       // ao cadastrar um novo produto, valoriza no objeto form a primeira categoria do select
       setEntity((previousEntity) => {
@@ -85,19 +79,18 @@ export function ProductFormPageV2() {
     reset(entity);
   }, [entity, reset]);
 
-  const onSubmit = (data: IProduct) => {
+  const onSubmit = async (data: IProduct) => {
     const product: IProduct = {
       ...data,
       id: entity.id,
       category: { id: data.category.id, name: "" },
     };
-    ProductService.save(product)
-      .then((response) => {
-        navigate("/products-v2");
-      })
-      .catch((error) => {
-        setApiError("Falha ao salvar o produto.");
-      });
+    const response = await save(product);
+    if (response.status === 200 || response.status === 201) {
+      navigate("/products-v2");
+    } else {
+      setApiError("Falha ao salvar o produto.");
+    }
   };
 
   return (

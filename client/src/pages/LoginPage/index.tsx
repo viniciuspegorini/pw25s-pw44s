@@ -1,22 +1,24 @@
-import React, { ChangeEvent, useState } from 'react'
-import { IUserLogin } from '@/commons/interfaces'
-import { ButtonWithProgress } from '@/components/ButtonWithProgress'
-import AuthService from '@/service/AuthService'
-import { Input } from '@/components/Input'
-import { Link, useNavigate } from 'react-router-dom'
-import './style.scss'
+import React, { ChangeEvent, useState } from "react";
+import { IUserLogin } from "@/commons/interfaces";
+import { ButtonWithProgress } from "@/components/ButtonWithProgress";
+import AuthService from "@/service/AuthService";
+import { Input } from "@/components/Input";
+import { Link, useNavigate } from "react-router-dom";
+import "./style.scss";
 
 export function LoginPage() {
   const [form, setForm] = useState({
     username: "",
     password: "",
-  })
+  });
 
   const [pendingApiCall, setPendingApiCall] = useState(false);
   const [disableSubmit, setDisableSubmit] = useState(true);
 
-  const [apiError, setApiError] = useState('')  
+  const [apiError, setApiError] = useState("");
   const navigate = useNavigate();
+
+  const { login } = AuthService;
 
   const onChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { value, name } = event.target;
@@ -31,28 +33,27 @@ export function LoginPage() {
     } else {
       setDisableSubmit(false);
     }
-    setApiError('');
+    setApiError("");
   };
 
-  const onClickLogin = () => {
+  const onClickLogin = async () => {
     setPendingApiCall(true);
 
     const userLogin: IUserLogin = {
       username: form.username,
       password: form.password,
     };
-    AuthService.login(userLogin)
-      .then((response) => {
-        localStorage.setItem("token", JSON.stringify(response.data.token));
-        localStorage.setItem("user", JSON.stringify(response.data.user));
-        setPendingApiCall(false);
-        navigate("/home");
-      })
-      .catch((errorResponse) => {
-        setApiError('Falha ao autenticar no sistema, verifique os dados informados')
-        setPendingApiCall(false)
-      })
-  }
+    const response = await login(userLogin);
+    if (response.status === 200) {
+      setPendingApiCall(false);
+      navigate("/home");
+    } else {
+      setApiError(
+        "Falha ao autenticar no sistema, verifique os dados informados"
+      );
+      setPendingApiCall(false);
+    }
+  };
 
   return (
     <>
